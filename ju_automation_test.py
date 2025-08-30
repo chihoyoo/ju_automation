@@ -19,11 +19,6 @@ import os
 import streamlit as st, tempfile, os, json
 
 
-NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
-if not NOTION_TOKEN:
-    st.error("NOTION_TOKEN이 설정되지 않았습니다.")
-    st.stop()
-
 DRIVE_SA_JSON_PATH = None  # 빌드 환경에서 동적으로 해석합니다
 
 
