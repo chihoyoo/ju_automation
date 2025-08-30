@@ -1,0 +1,11 @@
+streamlit==1.32.0
+notion-client==2.2.1
+pandas==2.2.1
+openpyxl==3.1.2
+requests==2.31.0
+google-api-python-client==2.137.0
+google-auth==2.33.0
+google-auth-oauthlib==1.2.1
+streamlit-aggrid==0.3.4.post3
+streamlit-oauth==0.1.10
+ 
