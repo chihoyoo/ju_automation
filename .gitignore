@@ -1,0 +1,25 @@
+@'
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.streamlit/secrets.toml
+build/
+dist/
+*.spec
+installer/
+*.exe
+*.msi
+*.zip
+*.dmg
+service_account.json
+auth_config.json
+auth_config.local.json
+*.pem
+*.key
+!auth_config_example.json
+'@ | Out-File -Encoding UTF8 .gitignore
