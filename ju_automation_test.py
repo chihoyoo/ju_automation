@@ -15,7 +15,8 @@ from ju_make_final_df import make_final_df
 from ju_make_finance_df import make_finance_df
 from ju_make_excel import build_finance_excel
 from googleapiclient.http import MediaIoBaseUpload
-import os,streamlit as st
+import os
+import streamlit as st, tempfile, os, json
 
 
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
@@ -24,6 +25,17 @@ if not NOTION_TOKEN:
     st.stop()
 
 DRIVE_SA_JSON_PATH = None  # 빌드 환경에서 동적으로 해석합니다
+
+
+if "GOOGLE_SERVICE_ACCOUNT_JSON" in st.secrets:
+    _sa_path = tempfile.NamedTemporaryFile(delete=False, suffix=".json").name
+    with open(_sa_path, "w", encoding="utf-8") as f:
+        f.write(st.secrets["GOOGLE_SERVICE_ACCOUNT_JSON"])
+    os.environ["DRIVE_SA_JSON_PATH"] = _sa_path
+if "NOTION_TOKEN" in st.secrets:
+    NOTION_TOKEN = st.secrets["NOTION_TOKEN"]
+
+
 st.set_page_config(page_title="소셜라운지 정산 자동화", layout="wide")
 st.title("소셜라운지 정산 자동화")
 # Notion 클라이언트 초기화
