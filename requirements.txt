@@ -8,4 +8,4 @@ google-auth==2.33.0
 google-auth-oauthlib==1.2.1
 streamlit-aggrid==0.3.4.post3
 streamlit-oauth==0.1.10
- 
+python-dotenv==1.0.1

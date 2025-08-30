@@ -1,8 +1,9 @@
-import streamlit as st
+from dotenv import load_dotenv, find_dotenv
+load_dotenv()  # .env 읽기
+from pathlib import Path
 import pandas as pd
 from notion_client import Client
 import tempfile
-import os
 import sys
 import urllib.parse
 import io
@@ -14,15 +15,17 @@ from ju_make_final_df import make_final_df
 from ju_make_finance_df import make_finance_df
 from ju_make_excel import build_finance_excel
 from googleapiclient.http import MediaIoBaseUpload
+import os,streamlit as st
 
-# Notion API 설정
-NOTION_TOKEN = "ntn_S224990196263MwylLULbwUwJjVkZXUgtjnCwURRDNh3m1"
+
+NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
+if not NOTION_TOKEN:
+    st.error("NOTION_TOKEN이 설정되지 않았습니다.")
+    st.stop()
+
 DRIVE_SA_JSON_PATH = None  # 빌드 환경에서 동적으로 해석합니다
-
-# Streamlit 페이지 설정
 st.set_page_config(page_title="소셜라운지 정산 자동화", layout="wide")
 st.title("소셜라운지 정산 자동화")
-
 # Notion 클라이언트 초기화
 notion = Client(auth=NOTION_TOKEN)
 
