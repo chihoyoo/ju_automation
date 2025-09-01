@@ -69,20 +69,13 @@ def make_final_df(
     if "노션상품키" in final_df.columns:
         final_df = final_df.drop(columns=["노션상품키"])
 
-    # 3) 금액 계산 컬럼 표준화/생성: (없어도 항상 생성되도록)
-    # 수량
-    if quantity_column and quantity_column in final_df.columns:
+    # 3) 공급가합계(vat포함) 계산: 공급가(vat포함) * 수량
+    if quantity_column and quantity_column in final_df.columns and "공급가(vat포함)" in final_df.columns:
         qty = pd.to_numeric(final_df[quantity_column], errors="coerce").fillna(0)
-    else:
-        qty = pd.Series(0, index=final_df.index)
-    # 단가(판매/공급)
-    sale_unit = pd.to_numeric(final_df["공구판매가"], errors="coerce").fillna(0) if "공구판매가" in final_df.columns else pd.Series(0, index=final_df.index)
-    cost_unit = pd.to_numeric(final_df["공급가(vat포함)"], errors="coerce").fillna(0) if "공급가(vat포함)" in final_df.columns else pd.Series(0, index=final_df.index)
-
-    # 합계 컬럼 생성(항상 생성)
-    final_df["공구판매가합계(vat포함)"] = (sale_unit * qty)
-    final_df["공급가합계(vat포함)"] = (cost_unit * qty)
-    final_df["정산금액(vat포함)"] = final_df["공급가합계(vat포함)"]
+        unit_price = pd.to_numeric(final_df["공급가(vat포함)"], errors="coerce").fillna("에러")
+        unit_price_sale  = pd.to_numeric(final_df["공구판매가"], errors="coerce").fillna(0)
+        final_df["공급가합계(vat포함)"] = unit_price * qty
+        final_df["공구판매가합계(vat포함)"] = unit_price_sale * qty
 
     # 4) 배송비 계산: 주문번호 그룹의 공구판매가 합이 조건 미만이면 첫 행에만 부과
     if (
@@ -126,11 +119,8 @@ def make_final_df(
     # 6) 컬럼 정리: 원래 df_raw 컬럼 + 지정 컬럼만 유지
     keep_cols = list(df_invoice_raw.columns) + [
         "노션상품",
-        "공구판매가",
         "공급가(vat포함)",
         "공급가합계(vat포함)",
-        "공구판매가합계(vat포함)",
-        "정산금액(vat포함)",
         "공구판매가",
         "공구판매가합계(vat포함)",
         "배송비",
