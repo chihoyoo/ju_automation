@@ -36,45 +36,6 @@ st.title("소셜라운지 정산 자동화")
 # Notion 클라이언트 초기화
 notion = Client(auth=NOTION_TOKEN)
 
-# Streamlit 렌더링 호환을 위한 DataFrame 정리 함수
-def sanitize_df_for_streamlit(df: pd.DataFrame) -> pd.DataFrame:
-    df2 = df.copy()
-    # 컬럼명을 문자열화 + 표시용 유니크 처리(표시 전용이므로 원본 로직과 무관)
-    orig_cols = [str(c) for c in df2.columns]
-    counts = {}
-    new_cols = []
-    for name in orig_cols:
-        if name in counts:
-            counts[name] += 1
-            new_cols.append(f"{name}__{counts[name]}")
-        else:
-            counts[name] = 0
-            new_cols.append(name)
-    df2.columns = new_cols
-    # 가능하면 dtype 정리
-    try:
-        df2 = df2.convert_dtypes()
-    except Exception:
-        pass
-    # object 컬럼 내 복합 타입(JSON 불가)을 문자열로 직렬화
-    for c in df2.columns:
-        col = df2[c]
-        try:
-            is_object = (getattr(col, "dtype", None) == "object")
-        except Exception:
-            is_object = False
-        if is_object:
-            try:
-                has_complex = col.apply(lambda x: isinstance(x, (dict, list, set, tuple, bytes, bytearray))).any()
-            except Exception:
-                has_complex = False
-            if has_complex:
-                df2[c] = col.apply(
-                    lambda x: json.dumps(list(x), ensure_ascii=False) if isinstance(x, set)
-                    else (json.dumps(x, ensure_ascii=False) if isinstance(x, (dict, list, tuple)) else (x.decode(errors="ignore") if isinstance(x, (bytes, bytearray)) else x))
-                )
-    return df2
-
 # Cache: Drive service (리소스)
 def _resolve_service_account_path() -> str:
     # 우선순위: 환경변수 → 실행파일/스크립트 폴더의 service_account.json → 기존 상수 경로(호환)
@@ -451,7 +412,7 @@ def main():
             st.dataframe(pd.DataFrame(st.session_state["drive_files"]), use_container_width=True)
     if "df_invoice_raw" in st.session_state and not st.session_state["df_invoice_raw"].empty:
         with st.expander("발주서 취합본(구글 xlsx 병합)"):
-            st.dataframe(sanitize_df_for_streamlit(st.session_state["df_invoice_raw"]), use_container_width=True)
+            st.dataframe(st.session_state["df_invoice_raw"], use_container_width=True)
     if "product_name" in st.session_state and "notion_page_id" in st.session_state:
         st.success(f"추출된 품목: {st.session_state['product_name']}/노션 페이지 ID: {st.session_state['notion_page_id']}")
 
@@ -486,10 +447,10 @@ def main():
                 df_notion = _extract_notion_table(df_x)
                 st.session_state["df_notion"] = df_notion.copy()
                 if not df_notion.empty:
-                    st.dataframe(sanitize_df_for_streamlit(df_notion), use_container_width=True)
+                    st.dataframe(df_notion, use_container_width=True)
                 else:
                     st.info("테이블 헤더/구간을 찾지 못했습니다. 원본을 표시합니다.")
-                    st.dataframe(sanitize_df_for_streamlit(df_x), use_container_width=True)
+                    st.dataframe(df_x, use_container_width=True)
             except Exception as e:
                 st.error(f"노션 파일 처리 중 오류: {e}")
 
@@ -642,7 +603,7 @@ def main():
                     st.session_state.get("island_fee_value_int"),
                 )
                 with st.expander("RAW데이터 보기"):
-                    st.dataframe(sanitize_df_for_streamlit(df_final), use_container_width=True)
+                    st.dataframe(df_final, use_container_width=True)
 
                 # 5. 정산 정리 df_finance 생성
                 try:
@@ -655,7 +616,7 @@ def main():
                         st.session_state.get("island_fee_value_int"),
                     )
                     with st.expander("정산 집계 데이터보기"):
-                        st.dataframe(sanitize_df_for_streamlit(df_finance), use_container_width=True)
+                        st.dataframe(df_finance, use_container_width=True)
                     st.session_state["df_finance"] = df_finance
                     # 다운로드 버튼
                     xls_bytes, final_filename = build_finance_excel(
