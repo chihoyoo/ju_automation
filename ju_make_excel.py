@@ -52,7 +52,7 @@ def build_finance_excel(df_finance: pd.DataFrame, df_final: pd.DataFrame | None 
     tcell.alignment = center
 
     # 브랜드 라벨: B3
-    ws.cell(row=3, column=start_col, value="우니동동X베로로").font = Font(size=10)
+    ws.cell(row=3, column=start_col, value="소셜라운지").font = Font(size=10)
 
     # Divider: B4:H4 하단 굵은 선
     thick = Side(border_style="medium", color="000000")
