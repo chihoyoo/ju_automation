@@ -79,7 +79,7 @@ def make_final_df(
 
     # 4) 배송비 계산: 주문번호 그룹의 공구판매가 합이 조건 미만이면 첫 행에만 부과
     if (
-        order_number_column
+        order_number_columnnotiono - dnj
         and order_number_column in final_df.columns
         and "공구판매가" in final_df.columns
         and shipping_fee is not None
@@ -126,6 +126,7 @@ def make_final_df(
         "배송비",
         "도서산간배송비",
     ]
+    st.write(df_notion.columns)
     existing = [c for c in keep_cols if c in final_df.columns]
     final_df = final_df.loc[:, existing]
     return final_df
