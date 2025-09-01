@@ -26,11 +26,17 @@ def make_finance_df(
     if df_final is not None and not df_final.empty:
         grp = df_final.groupby("노션상품", dropna=False)
         for opt, g in grp:
-            qty_series = pd.to_numeric(g.get(quantity_column, 0), errors="coerce").fillna(0) if quantity_column else pd.Series([0] * len(g))
+            if quantity_column and quantity_column in g.columns:
+                qty_series = pd.to_numeric(g[quantity_column], errors="coerce").fillna(0)
+            else:
+                qty_series = pd.Series(0, index=g.index)
             qty_sum = qty_series.sum()
-            unit_sale_series = pd.to_numeric(g.get("공구판매가"), errors="coerce").dropna()
-            unit_cost_series = pd.to_numeric(g.get("공급가(vat포함)"), errors="coerce").dropna()
-            sale_sum = pd.to_numeric(g.get("공구판매가합계(vat포함)"), errors="coerce").fillna(0).sum()
+            unit_sale_series = pd.to_numeric(g["공구판매가"], errors="coerce").dropna() if "공구판매가" in g.columns else pd.Series(dtype=float)
+            unit_cost_series = pd.to_numeric(g["공급가(vat포함)"], errors="coerce").dropna() if "공급가(vat포함)" in g.columns else pd.Series(dtype=float)
+            sale_sum = (
+                pd.to_numeric(g["공구판매가합계(vat포함)"], errors="coerce").fillna(0).sum()
+                if "공구판매가합계(vat포함)" in g.columns else 0
+            )
             unit_sale = int(unit_sale_series.iloc[0]) if not unit_sale_series.empty else 0
             unit_cost = int(unit_cost_series.iloc[0]) if not unit_cost_series.empty else 0
             settle_sum = int(round(unit_cost * qty_sum))
@@ -49,7 +55,10 @@ def make_finance_df(
 
     # 배송비 row
     ship_fee_sale = int(shipping_fee_sale or 0)
-    ship_cnt = int((pd.to_numeric(df_final.get("배송비", 0), errors="coerce").fillna(0) > 0).sum()) if df_final is not None else 0
+    if df_final is not None and "배송비" in df_final.columns:
+        ship_cnt = int((pd.to_numeric(df_final["배송비"], errors="coerce").fillna(0) > 0).sum())
+    else:
+        ship_cnt = 0
     if ship_cnt > 0 and ship_fee_sale > 0:
         ship_cost_unit = int(round(ship_fee_sale * (seller_ratio / 100)))
         rows.append({
@@ -63,12 +72,15 @@ def make_finance_df(
         })
 
     # 도서산간배송비 row
-    island_cnt = int((pd.to_numeric(df_final.get("도서산간배송비", 0), errors="coerce").fillna(0) > 0).sum()) if df_final is not None else 0
+    if df_final is not None and "도서산간배송비" in df_final.columns:
+        island_cnt = int((pd.to_numeric(df_final["도서산간배송비"], errors="coerce").fillna(0) > 0).sum())
+    else:
+        island_cnt = 0
     if island_cnt > 0:
         island_fee_sale = int(island_fee_input or 0)
         if island_fee_sale <= 0:
             # df_final의 도서산간배송비 평균(셀러부담 금액) → 원래 판매가로 역산
-            avg_fee_series = pd.to_numeric(df_final.get("도서산간배송비", 0), errors="coerce").fillna(0)
+            avg_fee_series = pd.to_numeric(df_final["도서산간배송비"], errors="coerce").fillna(0) if "도서산간배송비" in df_final.columns else pd.Series(dtype=float)
             avg_cost = float(avg_fee_series[avg_fee_series > 0].mean()) if (avg_fee_series > 0).any() else 0.0
             if avg_cost > 0 and seller_ratio > 0:
                 island_fee_sale = int(round(avg_cost / (seller_ratio / 100)))
