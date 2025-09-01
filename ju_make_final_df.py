@@ -70,9 +70,9 @@ def make_final_df(
         final_df = final_df.drop(columns=["노션상품키"])
 
     # 3) 공급가합계(vat포함) 계산: 공급가(vat포함) * 수량
-    if quantity_column and quantity_column in final_df.columns and "공급가 (vat포함)" in final_df.columns:
+    if quantity_column and quantity_column in final_df.columns and "공급가(vat포함)" in final_df.columns:
         qty = pd.to_numeric(final_df[quantity_column], errors="coerce").fillna(0)
-        unit_price = pd.to_numeric(final_df["공급가 (vat포함)"], errors="coerce").fillna(0)
+        unit_price = pd.to_numeric(final_df["공급가(vat포함)"], errors="coerce").fillna(0)
         unit_price_sale  = pd.to_numeric(final_df["공구판매가"], errors="coerce").fillna(0)
         final_df["공급가합계(vat포함)"] = unit_price * qty
         final_df["공구판매가합계(vat포함)"] = unit_price_sale * qty
