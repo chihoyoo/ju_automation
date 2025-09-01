@@ -390,10 +390,10 @@ def main():
         first_name = drive_files[0].get("name") or ""
         base = first_name.rsplit(".", 1)[0]
         parts = base.split("_")
-        if len(parts) < 4:
+        if len(parts) < 3:
             st.error("파일명 규칙(발주서_날짜_셀러_품목.xlsx)에 맞지 않습니다.")
             return
-        product_name = parts[3]
+        product_name = "_".join(parts[3:]) if len(parts) >= 4 else parts[-1]
         st.session_state["product_name"] = product_name
 
         candidates = search_pages_by_title(product_name)
