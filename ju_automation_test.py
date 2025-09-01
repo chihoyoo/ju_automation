@@ -643,7 +643,7 @@ def main():
                     st.session_state.get("island_flag_text_value"),
                     st.session_state.get("island_fee_value_int"),
                 )
-                st.write(df_final)
+                
                 # 표시/집계 전, 표시 과정에서 생긴 중복 접미사 컬럼(__숫자) 제거
                 try:
                     mask_keep = ~pd.Series(df_final.columns).astype(str).str.contains(r"__\\d+$")
