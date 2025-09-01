@@ -94,38 +94,42 @@ def build_finance_excel(df_finance: pd.DataFrame, df_final: pd.DataFrame | None 
         current_row += 1
 
     data_row_end = current_row - 1
+    has_data = data_row_end >= data_row_start
 
     # '상품명' 컬럼 병합 (B열): B8 ~ B{data_row_end}
-    if data_row_end >= data_row_start:
+    if has_data:
         ws.merge_cells(start_row=data_row_start, start_column=start_col, end_row=data_row_end, end_column=start_col)
         ws.cell(row=data_row_start, column=start_col).alignment = center
 
-    # 소계 행: 한 줄 추가
-    subtotal_row = data_row_end + 1
-    if subtotal_row >= data_row_start:
-        # 병합 B:C 에 소계
-        ws.merge_cells(start_row=subtotal_row, start_column=start_col, end_row=subtotal_row, end_column=start_col + 1)
-        sc = ws.cell(row=subtotal_row, column=start_col, value="소계")
-        sc.fill = PatternFill("solid", fgColor="EDEDED")
-        sc.font = bold_font
-        sc.alignment = center
-        sc.border = border_all
-        # 행 전체 회색 음영 및 테두리
-        for c in range(start_col, end_col + 1):
-            cell = ws.cell(row=subtotal_row, column=c)
-            cell.fill = PatternFill("solid", fgColor="EDEDED")
-            cell.border = border_all
-        # 합계: D, F, H
-        col_map = {"수량": 2, "공구판매가합계(vat포함)": 4, "정산금액(vat포함)": 6}  # offset from start_col
-        for name, off in col_map.items():
-            col_idx = start_col + off
-            col_letter = get_column_letter(col_idx)
-            cell = ws.cell(row=subtotal_row, column=col_idx, value=f"=SUM({col_letter}{data_row_start}:{col_letter}{data_row_end})")
-            cell.number_format = "#,##0"
-            cell.border = border_all
-            cell.alignment = right
+    # 소계 행: 한 줄 추가(항상 표시)
+    subtotal_row = max(data_row_start, data_row_end + 1)
+    # 병합 B:C 에 소계
+    ws.merge_cells(start_row=subtotal_row, start_column=start_col, end_row=subtotal_row, end_column=start_col + 1)
+    sc = ws.cell(row=subtotal_row, column=start_col, value="소계")
+    sc.fill = PatternFill("solid", fgColor="EDEDED")
+    sc.font = bold_font
+    sc.alignment = center
+    sc.border = border_all
+    # 행 전체 회색 음영 및 테두리
+    for c in range(start_col, end_col + 1):
+        cell = ws.cell(row=subtotal_row, column=c)
+        cell.fill = PatternFill("solid", fgColor="EDEDED")
+        cell.border = border_all
+    # 합계: D, F, H
+    col_map = {"수량": 2, "공구판매가합계(vat포함)": 4, "정산금액(vat포함)": 6}  # offset from start_col
+    for name, off in col_map.items():
+        col_idx = start_col + off
+        col_letter = get_column_letter(col_idx)
+        if has_data:
+            val = f"=SUM({col_letter}{data_row_start}:{col_letter}{data_row_end})"
+        else:
+            val = 0
+        cell = ws.cell(row=subtotal_row, column=col_idx, value=val)
+        cell.number_format = "#,##0"
+        cell.border = border_all
+        cell.alignment = right
 
-    # 계 행: 다음 줄
+    # 계 행: 다음 줄(항상 표시)
     total_row = subtotal_row + 1
     ws.merge_cells(start_row=total_row, start_column=start_col, end_row=total_row, end_column=end_col - 1)
     tc = ws.cell(row=total_row, column=start_col, value="계")
@@ -139,7 +143,8 @@ def build_finance_excel(df_finance: pd.DataFrame, df_final: pd.DataFrame | None 
         cell.border = border_all
     # H열(정산금액 총계)
     sum_col_idx = start_col + columns.index("정산금액(vat포함)")
-    ws.cell(row=total_row, column=end_col, value=f"=SUM({get_column_letter(sum_col_idx)}{data_row_start}:{get_column_letter(sum_col_idx)}{data_row_end})").number_format = "#,##0"
+    total_val = (f"=SUM({get_column_letter(sum_col_idx)}{data_row_start}:{get_column_letter(sum_col_idx)}{data_row_end})" if has_data else 0)
+    ws.cell(row=total_row, column=end_col, value=total_val).number_format = "#,##0"
 
     # 실 정산액 박스: total_row + 3
     final_row = total_row + 3
@@ -155,7 +160,7 @@ def build_finance_excel(df_finance: pd.DataFrame, df_final: pd.DataFrame | None 
         ws.cell(row=final_row, column=c).border = thick_border
     # D..H 병합 + 값
     ws.merge_cells(start_row=final_row, start_column=start_col + 2, end_row=final_row, end_column=end_col)
-    tv = ws.cell(row=final_row, column=start_col + 2, value=f"=SUM({get_column_letter(sum_col_idx)}{data_row_start}:{get_column_letter(sum_col_idx)}{data_row_end})")
+    tv = ws.cell(row=final_row, column=start_col + 2, value=(f"=SUM({get_column_letter(sum_col_idx)}{data_row_start}:{get_column_letter(sum_col_idx)}{data_row_end})" if has_data else 0))
     tv.number_format = "₩#,##0"
     tv.font = Font(bold=True)
     tv.alignment = right
