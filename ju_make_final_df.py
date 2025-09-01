@@ -29,7 +29,21 @@ def make_final_df(
         raise KeyError(f"상품명 컬럼이 존재하지 않습니다: {product_column}")
 
     df_result = df_invoice_raw.copy()
-    st.dataframe(df_notion)
+    # df_notion 컬럼명의 개행/스페이스 제거 및 중복 처리(안전)
+    try:
+        cols = pd.Index(map(str, df_notion.columns)).str.replace(r"\s+", "", regex=True)
+        seen = {}
+        new_cols = []
+        for name in cols:
+            if name in seen:
+                seen[name] += 1
+                new_cols.append(f"{name}_{seen[name]}")
+            else:
+                seen[name] = 0
+                new_cols.append(name)
+        df_notion.columns = new_cols
+    except Exception:
+        pass
     if option_column and option_column != "없음" and option_column in df_result.columns:
         key_series = (
             df_result[product_column].astype(str).str.strip()
@@ -126,7 +140,6 @@ def make_final_df(
         "배송비",
         "도서산간배송비",
     ]
-    st.write(df_notion.columns)
     existing = [c for c in keep_cols if c in final_df.columns]
     final_df = final_df.loc[:, existing]
     return final_df

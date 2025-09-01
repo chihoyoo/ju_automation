@@ -478,6 +478,21 @@ def main():
             df_x = pd.read_excel(tmp_file.name)
             # 노션 표 추출 → df_notion
             df_notion = _extract_notion_table(df_x)
+            # 컬럼명의 개행/스페이스 제거 및 중복 처리
+            try:
+                cols = pd.Index(map(str, df_notion.columns)).str.replace(r"\s+", "", regex=True)
+                seen = {}
+                new_cols = []
+                for name in cols:
+                    if name in seen:
+                        seen[name] += 1
+                        new_cols.append(f"{name}_{seen[name]}")
+                    else:
+                        seen[name] = 0
+                        new_cols.append(name)
+                df_notion.columns = new_cols
+            except Exception:
+                pass
             st.session_state["df_notion"] = df_notion.copy()
             if not df_notion.empty:
                 st.dataframe(_streamlit_safe_df(df_notion), use_container_width=True)
