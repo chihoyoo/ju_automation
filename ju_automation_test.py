@@ -563,22 +563,24 @@ def main():
                 submitted_match = st.form_submit_button("매칭 저장")
 
             if submitted_match:
-                # 유효성(중복 금지, 선택 안함/None 제외)
+                # 유효성: 중복 여부만 알리고 계속 진행(선택 안함/None 제외)
                 chosen_vals = [v for v in edited["노션상품"].tolist() if v not in (None, "(선택 안함)")]
-                if pd.Series(chosen_vals).duplicated(keep=False).any():
-                    st.error("동일한 노션상품이 여러 행에 선택되었습니다. 중복을 제거해주세요.")
-                else:
-                    mapping = {
-                        row["주문상품"]: (None if (pd.isna(row["노션상품"]) or row["노션상품"] == "(선택 안함)") else row["노션상품"]) 
-                        for _, row in edited.iterrows()
-                    }
-                    st.session_state["matching_map"] = mapping
-                    df_matching = pd.DataFrame([
-                        {"주문상품": k, "노션상품": v}
-                        for k, v in mapping.items() if v is not None
-                    ])
-                    st.session_state["df_matching"] = df_matching
-                    st.success("매칭이 저장되었습니다.")
+                has_dup = pd.Series(chosen_vals).duplicated(keep=False).any()
+                if has_dup:
+                    st.warning("동일한 노션상품이 여러 행에 선택되었습니다. 산출은 진행됩니다.")
+
+                # 매핑 저장(중복이 있어도 진행)
+                mapping = {
+                    row["주문상품"]: (None if (pd.isna(row["노션상품"]) or row["노션상품"] == "(선택 안함)") else row["노션상품"]) 
+                    for _, row in edited.iterrows()
+                }
+                st.session_state["matching_map"] = mapping
+                df_matching = pd.DataFrame([
+                    {"주문상품": k, "노션상품": v}
+                    for k, v in mapping.items() if v is not None
+                ])
+                st.session_state["df_matching"] = df_matching
+                st.success("매칭이 저장되었습니다.")
 
             if "df_matching" in st.session_state and not st.session_state["df_matching"].empty:
                 st.divider()
