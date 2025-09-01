@@ -39,8 +39,18 @@ notion = Client(auth=NOTION_TOKEN)
 # Streamlit 렌더링 호환을 위한 DataFrame 정리 함수
 def sanitize_df_for_streamlit(df: pd.DataFrame) -> pd.DataFrame:
     df2 = df.copy()
-    # 컬럼명을 문자열화
-    df2.columns = [str(c) for c in df2.columns]
+    # 컬럼명을 문자열화 + 표시용 유니크 처리(표시 전용이므로 원본 로직과 무관)
+    orig_cols = [str(c) for c in df2.columns]
+    counts = {}
+    new_cols = []
+    for name in orig_cols:
+        if name in counts:
+            counts[name] += 1
+            new_cols.append(f"{name}__{counts[name]}")
+        else:
+            counts[name] = 0
+            new_cols.append(name)
+    df2.columns = new_cols
     # 가능하면 dtype 정리
     try:
         df2 = df2.convert_dtypes()
@@ -48,15 +58,20 @@ def sanitize_df_for_streamlit(df: pd.DataFrame) -> pd.DataFrame:
         pass
     # object 컬럼 내 복합 타입(JSON 불가)을 문자열로 직렬화
     for c in df2.columns:
-        if df2[c].dtype == "object":
+        col = df2[c]
+        try:
+            is_object = (getattr(col, "dtype", None) == "object")
+        except Exception:
+            is_object = False
+        if is_object:
             try:
-                has_complex = df2[c].apply(lambda x: isinstance(x, (dict, list, set, tuple))).any()
+                has_complex = col.apply(lambda x: isinstance(x, (dict, list, set, tuple, bytes, bytearray))).any()
             except Exception:
                 has_complex = False
             if has_complex:
-                df2[c] = df2[c].apply(
+                df2[c] = col.apply(
                     lambda x: json.dumps(list(x), ensure_ascii=False) if isinstance(x, set)
-                    else (json.dumps(x, ensure_ascii=False) if isinstance(x, (dict, list, tuple)) else x)
+                    else (json.dumps(x, ensure_ascii=False) if isinstance(x, (dict, list, tuple)) else (x.decode(errors="ignore") if isinstance(x, (bytes, bytearray)) else x))
                 )
     return df2
 
