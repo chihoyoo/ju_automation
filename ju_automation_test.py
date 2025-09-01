@@ -627,6 +627,14 @@ def main():
                     st.session_state.get("island_flag_text_value"),
                     st.session_state.get("island_fee_value_int"),
                 )
+                # 표시/집계 전, 표시 과정에서 생긴 중복 접미사 컬럼(__숫자) 제거
+                try:
+                    mask_keep = ~pd.Series(df_final.columns).astype(str).str.contains(r"__\\d+$")
+                    df_final = df_final.loc[:, list(mask_keep)]
+                    # 완전 동일한 중복 컬럼명도 첫 컬럼만 유지
+                    df_final = df_final.loc[:, ~pd.Index(df_final.columns).duplicated(keep="first")]
+                except Exception:
+                    pass
                 with st.expander("RAW데이터 보기"):
                     st.dataframe(_streamlit_safe_df(df_final), use_container_width=True)
 
