@@ -29,7 +29,7 @@ def make_final_df(
         raise KeyError(f"상품명 컬럼이 존재하지 않습니다: {product_column}")
 
     df_result = df_invoice_raw.copy()
-
+    st.dataframe(df_notion)
     if option_column and option_column != "없음" and option_column in df_result.columns:
         key_series = (
             df_result[product_column].astype(str).str.strip()
