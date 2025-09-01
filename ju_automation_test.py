@@ -427,31 +427,46 @@ def main():
         st.session_state["selected_xlsx_index"] = selected_index
         selected_file = files[selected_index]
 
+        import requests
+        file_bytes = None
+        tmp_path = None
         try:
-            import requests
+            # 1) 다운로드 (메모리에 보관)
+            response = requests.get(selected_file["url"], timeout=30)
+            response.raise_for_status()
+            file_bytes = response.content
+
+            # 2) 임시 파일 저장 (읽기 편의)
             with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp_file:
-                response = requests.get(selected_file["url"], timeout=30)
-                response.raise_for_status()
-                tmp_file.write(response.content)
-            df_x = pd.read_excel(tmp_file.name)
-            # 노션 표 추출 → df_notion
-            df_notion = _extract_notion_table(df_x)
-            st.session_state["df_notion"] = df_notion.copy()
-            if not df_notion.empty:
-                st.dataframe(df_notion, use_container_width=True)
-            else:
-                st.info("테이블 헤더/구간을 찾지 못했습니다. 원본을 표시합니다.")
-                st.dataframe(df_x, use_container_width=True)
-            with open(tmp_file.name, "rb") as f:
-                st.download_button(
-                    label="다운로드 (.xlsx)",
-                    data=f,
-                    file_name=selected_file["name"] if selected_file["name"].lower().endswith(".xlsx") else f"{selected_file['name']}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                )
-            os.unlink(tmp_file.name)
-        except Exception as e:
-            st.error(f"노션 파일 처리 중 오류: {e}")
+                tmp_file.write(file_bytes)
+                tmp_path = tmp_file.name
+
+            # 3) 미리보기/파싱 시도 (실패해도 다운로드는 제공)
+            try:
+                df_x = pd.read_excel(tmp_path)
+                df_notion = _extract_notion_table(df_x)
+                st.session_state["df_notion"] = df_notion.copy()
+                if not df_notion.empty:
+                    st.dataframe(df_notion, use_container_width=True)
+                else:
+                    st.info("테이블 헤더/구간을 찾지 못했습니다. 원본을 표시합니다.")
+                    st.dataframe(df_x, use_container_width=True)
+            except Exception as e:
+                st.error(f"노션 파일 처리 중 오류: {e}")
+
+            # 4) 항상 다운로드 버튼 표시 (파일 처리 실패해도 가능)
+            st.download_button(
+                label="다운로드 (.xlsx)",
+                data=file_bytes,
+                file_name=selected_file["name"] if selected_file["name"].lower().endswith(".xlsx") else f"{selected_file['name']}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.unlink(tmp_path)
+                except Exception:
+                    pass
 
     # 매핑 UI: df_invoice_raw 와 df_notion 이 있어야 진행
     if ("df_invoice_raw" in st.session_state and isinstance(st.session_state["df_invoice_raw"], pd.DataFrame)
