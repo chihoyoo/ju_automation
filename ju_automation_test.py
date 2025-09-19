@@ -526,9 +526,9 @@ def main():
             sel_option = st.selectbox("1-2. 주문데이터의 옵션명 컬럼을 선택해주세요", options=["없음"] + raw_columns, key="raw_option_col")
             sel_qty = st.selectbox("1-3. 수량 컬럼을 선택해주세요", options=raw_columns, key="raw_qty_col")
             sel_orderno = st.selectbox("1-4. 주문번호 컬럼을 선택해주세요", options=raw_columns, key="raw_orderno_col")
-            input_seller_ratio = st.number_input("1-5. 셀러부담 배송비 비율을 입력해주세요", min_value=0, max_value=100, step=1, value=100, key="seller_shipping_ratio")
+            input_seller_ratio = st.number_input("1-5. 소셜라운지 부담 배송비 비율을 입력해주세요", min_value=0, max_value=100, step=1, value=100, key="seller_shipping_ratio")
             input_shipping_fee = st.number_input("1-6. 배송비를 입력해주세요", min_value=0, step=1, value=3000, key="shipping_fee")
-            input_shipping_cond = st.number_input("1-7. 배송비 조건 금액을 입력해주세요(예: 50000원 이하 → 50000)", min_value=0, step=1000, value=40000, key="shipping_condition_amount")
+            input_shipping_cond = st.number_input("1-7. 배송비 조건 금액을 입력해주세요(예: 50000원 이하 → 50000, 모든 주문에 배송비 부과시 999999999 입력)", min_value=0, step=1000, value=40000, key="shipping_condition_amount")
             sel_island_col = st.selectbox("1-8. 도서산간배송비 컬럼을 선택해주세요", options=["(없음)"] + raw_columns, key="raw_island_col")
             sel_island_mode = st.selectbox(
                 "1-9. 도서산간배송비 산출방법을 선택해주세요",
